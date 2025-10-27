@@ -1,0 +1,118 @@
+/* Basic page styling */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Header */
+header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 15px;
+  background: #f2f2f2;
+  border-bottom: 2px solid #000;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+header button {
+  background: white;
+  border: 1px solid #000;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+/* Main layout */
+main {
+  padding: 15px;
+}
+
+/* Product cards */
+.card {
+  border: 2px solid #000;     /* thicker border */
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.card img {
+  width: 80px;
+  height: 80px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.card h2 {
+  font-size: 16px;
+  margin: 5px 0;
+}
+
+.price {
+  font-weight: bold;
+}
+
+/* Buttons */
+.btn-primary {
+  background: #1e70d1;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.btn-primary:disabled {
+  background: gray;
+}
+
+.btn-outline {
+  border: 1px solid #000;
+  background: white;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.controls {
+  margin-top: 8px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ------- CART PAGE ------- */
+
+.cart-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cart-row {
+  border: 2px solid #000;  /* thicker border */
+  border-radius: 8px;
+  padding: 10px;
+  width: 200px;
+}
+
+.cart-row img {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 6px;
+}
+
+/* -------- CHECKOUT FORM BLOCK -------- */
+
+.checkout-block {
+  border: 2px solid #000;   /* wrapped in block like card */
+  padding: 12px;
+  margin-top: 20px;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.checkout-block p {
+  margin: 6px 0;
+}
