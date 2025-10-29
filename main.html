@@ -11,7 +11,12 @@
     <div id="app">
       <header>
         <h1 v-text="sitename"></h1>
-        <button v-on:click="showCheckout">
+        <!-- ✅ Disabled when cart is empty -->
+        <button
+          :disabled="cart.length === 0"
+          v-on:click="showCheckout"
+          title="Open cart"
+        >
           {{ cartItemCount }}
           <i class="fa-solid fa-cart-plus"></i>
           Checkout
@@ -20,17 +25,6 @@
 
       <!-- Filters (under the header) -->
       <section class="filters">
-        <!-- Price buttons -->
-        <div>
-          <strong>Price:</strong>
-          <button class="btn-outline" @click="priceFilter='all'">Show All</button>
-          <button class="btn-outline" @click="priceFilter='le70'">≤70</button>
-          <button class="btn-outline" @click="priceFilter='71_80'">71–80</button>
-          <button class="btn-outline" @click="priceFilter='81_90'">81–90</button>
-          <button class="btn-outline" @click="priceFilter='91_100'">91–100</button>
-          <button class="btn-outline" @click="priceFilter='gt100'">100+</button>
-        </div>
-
         <!-- In-stock only -->
         <div>
           <label>
@@ -42,8 +36,8 @@
         <!-- Sort radios -->
         <div>
           <strong>Sort:</strong>
-          <label><input type="radio" value="az" v-model="filters.sortAlpha"> Ascending</label>
-          <label><input type="radio" value="za" v-model="filters.sortAlpha"> Descending</label>
+          <label><input type="radio" value="az"  v-model="filters.sortAlpha"> Ascending</label>
+          <label><input type="radio" value="za"  v-model="filters.sortAlpha"> Descending</label>
         </div>
 
         <div>
@@ -54,25 +48,20 @@
       <main>
         <!-- Product List -->
         <div v-if="showProduct">
-          <!-- Cards (sort first, filter with v-if inside each card) -->
-          <div v-for="product in sortedByTitle" :key="product.id"
-               class="card"
-               v-if="(priceFilter==='all'
-                       || (priceFilter==='le70' && product.price<=70)
-                       || (priceFilter==='71_80' && product.price>=71 && product.price<=80)
-                       || (priceFilter==='81_90' && product.price>=81 && product.price<=90)
-                       || (priceFilter==='91_100' && product.price>=91 && product.price<=100)
-                       || (priceFilter==='gt100' && product.price>=101))
-                     && (!filters.inStockOnly
-                         || (product.availableInventory - cartCount(product.id) > 0))">
-
+          <!-- Card list -->
+          <div
+            v-for="product in sortedByTitle"
+            :key="product.id"
+            class="card"
+            v-if="!filters.inStockOnly || (product.availableInventory - cartCount(product.id) > 0)"
+          >
             <figure><img :src="product.image" alt=""></figure>
             <h2 v-text="product.title"></h2>
             <p v-text="product.description"></p>
 
             <p class="price">Price: £{{ product.price }}</p>
             <p>Location: {{ product.Location }}</p>
-            <p>space: {{ product.availableInventory - cartCount(product.id) }}</p>
+            <p>Spaces: {{ product.availableInventory - cartCount(product.id) }}</p>
 
             <!-- Purchase controls: ONLY Add to cart or Out of Stock -->
             <div class="controls">
@@ -95,7 +84,7 @@
             </div>
           </div>
 
-          <!-- Simple message if nothing visible -->
+          <!-- Message if nothing visible -->
           <p v-if="visibleCount === 0">No activities match your filter.</p>
         </div>
 
@@ -119,7 +108,6 @@
                     • Total: £{{ (item.price * item.qty).toFixed(2) }}
                   </p>
                 </div>
-                <!-- No +/- or remove controls in checkout -->
               </div>
 
               <p class="total">Cart Total: £{{ cartTotal }}</p>
@@ -179,8 +167,7 @@
           cart: [],                 // stores product IDs
           showProduct: true,
 
-          // simple filters
-          priceFilter: 'all',          // 'all' | 'le70' | '71_80' | '81_90' | '91_100' | 'gt100'
+          // filters kept: in-stock + alphabetical
           filters: {
             inStockOnly: false,
             sortAlpha: 'az'            // 'az' or 'za'
@@ -234,7 +221,6 @@
           },
 
           resetFilters(){
-            this.priceFilter = 'all';
             this.filters.inStockOnly = false;
             this.filters.sortAlpha = 'az';
           }
@@ -256,7 +242,7 @@
                   title: p.title,
                   price: p.price,
                   image: p.image,
-                  location: p.Location,   // include Location for checkout display
+                  location: p.Location,
                   qty: qty
                 });
               }
@@ -279,23 +265,14 @@
             return copy;
           },
 
-          // count visible cards (same conditions as v-if) to show "No activities" message
+          // count visible cards (only in-stock filter now)
           visibleCount(){
             let n = 0;
             for (let i = 0; i < this.activities.length; i++) {
               const p = this.activities[i];
               const remaining = p.availableInventory - this.cartCount(p.id);
               const matchesStock = (!this.filters.inStockOnly) || (remaining > 0);
-              let matchesPrice = false;
-
-              if (this.priceFilter === 'all') matchesPrice = true;
-              else if (this.priceFilter === 'le70' && p.price <= 70) matchesPrice = true;
-              else if (this.priceFilter === '71_80' && p.price >= 71 && p.price <= 80) matchesPrice = true;
-              else if (this.priceFilter === '81_90' && p.price >= 81 && p.price <= 90) matchesPrice = true;
-              else if (this.priceFilter === '91_100' && p.price >= 91 && p.price <= 100) matchesPrice = true;
-              else if (this.priceFilter === 'gt100' && p.price >= 101) matchesPrice = true;
-
-              if (matchesPrice && matchesStock) n++;
+              if (matchesStock) n++;
             }
             return n;
           }
