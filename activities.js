@@ -15,7 +15,7 @@ let activities = [
     price: 80.00,
     image: "physics.jpg",
     availableInventory: 5,
-    Location: "Dubai"
+    Location: "Al Ain"
   },
   {
     id: 1003,
@@ -24,7 +24,7 @@ let activities = [
     price: 90.00,
     image: "biology.jpg",
     availableInventory: 5,
-    Location: "Dubai"
+    Location: "Sharjah"
   },
   {
     id: 1004,
@@ -33,7 +33,7 @@ let activities = [
     price: 70.00,
     image: "maths.jpg",
     availableInventory: 5,
-    Location: "Dubai"
+    Location: "Ajman"
   },
   {
     id: 1005,
@@ -51,7 +51,7 @@ let activities = [
     price: 65.00,
     image: "badminton.jpg",
     availableInventory: 5,
-    Location: "Dubai"
+    Location: "Sharjah"
   },
   {
     id: 1007,
@@ -69,7 +69,7 @@ let activities = [
     price: 70.00,
     image: "basketball.jpg",
     availableInventory: 5,
-    Location: "Dubai"
+    Location: "Al Ain"
   },
   {
     id: 1009,
@@ -78,7 +78,7 @@ let activities = [
     price: 70.00,
     image: "football.jpg",
     availableInventory: 5,
-    Location: "Dubai"
+    Location: "Sharjah"
   },
   {
     id: 1010,
@@ -87,6 +87,6 @@ let activities = [
     price: 60.00,
     image: "art.jpg",
     availableInventory: 5,
-    Location: "Dubai"
+    Location: "Ajman"
   }
 ];

@@ -27,8 +27,8 @@
         </button>
       </header>
 
-      <!-- Top Search  -->
-      <div class="top-search">
+      <!-- Top Search: only on lessons page -->
+      <div class="top-search" v-if="showProduct">
         <input
           class="top-search-input"
           v-model="searchText"
@@ -52,15 +52,8 @@
 
               <div class="sep"></div>
 
-              <label><input type="radio" value="az" v-model="filters.sortAlpha"> Ascending</label><br>
-              <label><input type="radio" value="za" v-model="filters.sortAlpha"> Descending</label>
-
-              <div class="sep"></div>
-
-              <label>
-                <input type="checkbox" v-model="filters.inStockOnly">
-                In stock only
-              </label>
+              <label><input type="radio" value="az" v-model="sortOrder"> Ascending</label><br>
+              <label><input type="radio" value="za" v-model="sortOrder"> Descending</label>
 
               <div class="sep"></div>
               <button class="btn-reset" @click="resetFilters">Reset</button>
@@ -74,7 +67,6 @@
                 v-for="product in sortedAndFiltered"
                 :key="product.id"
                 class="card"
-                v-if="!filters.inStockOnly || (product.availableInventory - cartCount(product.id) > 0)"
               >
                 <figure class="thumb"><img :src="product.image" alt=""></figure>
 
@@ -127,7 +119,7 @@
             <p class="order-info"><strong>Order Information</strong></p>
             <p>Name: {{ order.name }} &nbsp; | &nbsp; Phone: {{ order.phone }} &nbsp; | &nbsp; Method: {{ order.method }}</p>
 
-            
+            <!-- Always visible; only clickable when name/phone valid -->
             <button class="btn-primary" :disabled="!isValidCustomer" @click="submitForm">
               Place Order
             </button>
@@ -174,11 +166,11 @@
           cart:[],
           showProduct:true,
 
-          // filters + sorting
-          filters:{ inStockOnly:false, sortAlpha:'az' },   // 'az' or 'za'
-          sortBy: 'subject',                                // 'subject' | 'location' | 'price' | 'spaces'
+          // sorting controls
+          sortBy: 'subject',    // 'subject' | 'location' | 'price' | 'spaces'
+          sortOrder: 'az',      // 'az' or 'za'
 
-          // search text
+          // search text (lessons page only)
           searchText: '',
 
           // checkout data
@@ -200,9 +192,8 @@
             this.showProduct=true;                           // back to lessons
           },
           resetFilters(){
-            this.filters.inStockOnly=false;
-            this.filters.sortAlpha='az';
             this.sortBy='subject';
+            this.sortOrder='az';
             this.searchText='';
           },
           spacesLeft(id){
@@ -212,7 +203,7 @@
         },
 
         computed:{
-          
+          // Return a number so header shows 0 when empty
           cartItemCount(){ return this.cart.length; },
 
           cartDetails(){
@@ -225,7 +216,7 @@
             return this.cartDetails.reduce((s,i)=>s+i.price*i.qty,0).toFixed(2);
           },
 
-          // Search across subject, location, price, spaces
+          // Search across subject, location, price, spaces (lessons page)
           searchedList(){
             const q = (this.searchText || '').toString().trim().toLowerCase();
             if (!q) return this.activities.slice();
@@ -260,21 +251,18 @@
               if (typeof A==='string' && typeof B==='string') cmp = A.localeCompare(B);
               else cmp = (A<B)?-1 : (A>B)?1 : 0;
 
-              return this.filters.sortAlpha==='az' ? cmp : -cmp;
+              return this.sortOrder==='az' ? cmp : -cmp;
             });
 
             return list;
           },
 
-          
+          // For the “No activities match…” message
           visibleCount(){
-            return this.searchedList.filter(p=>{
-              const left=p.availableInventory-this.cartCount(p.id);
-              return !this.filters.inStockOnly || left>0;
-            }).length;
+            return this.sortedAndFiltered.length;
           },
 
-          
+          // Only validates Name & Phone (button always visible)
           isValidCustomer(){
             const nameOk  = /^[A-Za-z\s]+$/.test(this.order.name || '');
             const phoneOk = /^[0-9]+$/.test(this.order.phone || '');
