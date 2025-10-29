@@ -11,11 +11,19 @@
     <div id="app">
       <header>
         <h1 v-text="sitename"></h1>
-        <!-- disabled when cart empty -->
-        <button :disabled="cart.length===0" v-on:click="showCheckout">
+
+        
+        <button v-if="showProduct"
+                :disabled="cart.length===0"
+                @click="showCheckout">
           {{ cartItemCount }}
           <i class="fa-solid fa-cart-plus"></i>
           Checkout
+        </button>
+
+        
+        <button v-else @click="showCheckout">
+          ← Back to Lessons
         </button>
       </header>
 
@@ -52,7 +60,7 @@
           <section class="cards-area">
             <div class="cards-wrapper">
               <div
-                v-for="product in sortedByTitle"
+                v-for="product in sortedList"
                 :key="product.id"
                 class="card"
                 v-if="!filters.inStockOnly || (product.availableInventory - cartCount(product.id) > 0)"
@@ -61,7 +69,6 @@
 
                 <p class="card-line"><strong>Subject:</strong> {{ product.title }}</p>
                 <p class="card-line"><strong>Location:</strong> {{ product.Location }}</p>
-                <!-- AED on product cards -->
                 <p class="card-line"><strong>Price:</strong> AED {{ product.price.toFixed(2) }}</p>
                 <p class="card-line"><strong>Spaces:</strong> {{ product.availableInventory - cartCount(product.id) }}</p>
 
@@ -72,6 +79,14 @@
                     @click="addToCart(product)"
                   >Add to cart</button>
                   <button v-else class="btn-outline" disabled>Out of Stock</button>
+                </div>
+
+                <div class="stock">
+                  <span v-if="product.availableInventory === cartCount(product.id)">All out!</span>
+                  <span v-else-if="product.availableInventory - cartCount(product.id) < 5">
+                    Only {{ product.availableInventory - cartCount(product.id) }} left!
+                  </span>
+                  <span v-else>Buy now!</span>
                 </div>
               </div>
             </div>
@@ -85,7 +100,7 @@
         <div v-else class="checkout-view">
           <h2 class="page-title">Checkout</h2>
 
-          <!-- Name / Phone (validation) -->
+          <!-- Name / Phone (validation only) -->
           <div class="checkout-form">
             <p><strong>Name:</strong> <input v-model="order.name" placeholder="Letters only" /></p>
             <p><strong>Phone:</strong> <input v-model="order.phone" placeholder="Numbers only" /></p>
@@ -102,7 +117,8 @@
             <p class="order-info"><strong>Order Information</strong></p>
             <p>Name: {{ order.name }} &nbsp; | &nbsp; Phone: {{ order.phone }} &nbsp; | &nbsp; Method: {{ order.method }}</p>
 
-            <button class="btn-primary" :disabled="!isValidCustomer" v-on:click="submitForm">
+            
+            <button class="btn-primary" :disabled="!isValidCustomer" @click="submitForm">
               Place Order
             </button>
             <p v-if="!isValidCustomer" class="hint">
@@ -110,7 +126,7 @@
             </p>
           </div>
 
-          <!-- Cart Summary (card style) -->
+          <!-- Cart Summary -->
           <section class="cart-summary">
             <h3 class="cart-title">Shopping Cart</h3>
 
@@ -120,10 +136,8 @@
                   <div class="cart-text">
                     <p class="line"><strong>Subject:</strong> {{ item.title }}</p>
                     <p class="line"><strong>Location:</strong> {{ item.location }}</p>
-                    <!-- AED in cart items -->
                     <p class="line"><strong>Price:</strong> AED {{ (item.price).toFixed(2) }}</p>
                     <p class="line"><strong>Spaces:</strong> {{ spacesLeft(item.id) }}</p>
-                    <!-- Line total in AED -->
                     <p class="line"><strong>Line Total:</strong> AED {{ (item.price * item.qty).toFixed(2) }}</p>
                   </div>
                   <img :src="item.image" alt="" class="cart-thumb">
@@ -135,7 +149,6 @@
 
             <p v-else>Your cart is empty.</p>
 
-            <!-- Cart total in AED -->
             <p class="total">Cart Total: AED {{ cartTotal }}</p>
           </section>
         </div>
@@ -155,11 +168,9 @@
           filters:{ inStockOnly:false, sortAlpha:'az' },   // 'az' or 'za'
           sortBy: 'subject',                                // 'subject' | 'location' | 'price' | 'spaces'
 
-          // checkout data
+          // checkout data 
           order:{ name:'', phone:'', method:'Home', gift:false,
-                  sendGift:'Send as a gift', dontSendGift:'do not send as a gift' },
-
-          states:{ Dxb:'Dubai',Sjh:'Sharjah',Aj:'Ajman',Ala:'Al ain' }
+                  sendGift:'Send as a gift', dontSendGift:'do not send as a gift' }
         },
 
         methods:{
@@ -169,18 +180,17 @@
           cartCount(id){ return this.cart.filter(pid=>pid===id).length; },
           showCheckout(){ this.showProduct = !this.showProduct; },
           submitForm(){
-            alert('Order Submitted!');
-            this.cart.length=0;
+            alert('Order Submitted!');                       // confirmation
+            this.cart.length=0;                             // clear cart
             this.order.name=''; this.order.phone='';
             this.order.method='Home'; this.order.gift=false;
-            this.showProduct=true;
+            this.showProduct=true;                          // back to lessons
           },
           resetFilters(){
             this.filters.inStockOnly=false;
             this.filters.sortAlpha='az';
             this.sortBy='subject';
           },
-          // used in cart card to show live remaining spaces for that item
           spacesLeft(id){
             const p = this.activities.find(a => a.id === id);
             return p ? (p.availableInventory - this.cartCount(id)) : 0;
@@ -200,12 +210,12 @@
             return this.cartDetails.reduce((s,i)=>s+i.price*i.qty,0).toFixed(2);
           },
 
-          // sort by chosen attribute + asc/desc
-          sortedByTitle(){
-            const copy=this.activities.slice();
+          // Sort (no search)
+          sortedList(){
+            const list = this.activities.slice();
             const left = (p)=> p.availableInventory - this.cartCount(p.id);
 
-            copy.sort((a,b)=>{
+            list.sort((a,b)=>{
               let A,B;
               if (this.sortBy==='subject')      { A=a.title;     B=b.title; }
               else if (this.sortBy==='location'){ A=a.Location;  B=b.Location; }
@@ -219,10 +229,10 @@
               return this.filters.sortAlpha==='az' ? cmp : -cmp;
             });
 
-            return copy;
+            return list;
           },
 
-          // visible count (in-stock only)
+          
           visibleCount(){
             return this.activities.filter(p=>{
               const left=p.availableInventory-this.cartCount(p.id);
@@ -230,11 +240,11 @@
             }).length;
           },
 
-          // name letters-only, phone numbers-only, and cart not empty
+          
           isValidCustomer(){
             const nameOk  = /^[A-Za-z\s]+$/.test(this.order.name || '');
             const phoneOk = /^[0-9]+$/.test(this.order.phone || '');
-            return nameOk && phoneOk && this.cart.length>0;
+            return nameOk && phoneOk;
           }
         }
       });
