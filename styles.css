@@ -188,3 +188,19 @@ header button:disabled { opacity:0.6; cursor:not-allowed; }
   cursor: not-allowed;
 }
 
+/* Top search bar under header */
+.top-search {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 16px;
+  background:#f0f3ff;
+  border-bottom:1px solid #dfe6ff;
+}
+.top-search-input {
+  flex:1;
+  padding:8px 10px;
+  border:1px solid #bbb;
+  border-radius:6px;
+}
+
