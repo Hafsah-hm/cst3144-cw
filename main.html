@@ -11,7 +11,7 @@
     <div id="app">
       <header>
         <h1 v-text="sitename"></h1>
-        
+        <!-- disabled when cart empty -->
         <button :disabled="cart.length===0" v-on:click="showCheckout">
           {{ cartItemCount }}
           <i class="fa-solid fa-cart-plus"></i>
@@ -28,14 +28,23 @@
           </label>
         </div>
 
-        <!-- Sort radios -->
-        <div>
+        <!-- ✅ NEW: Sort-by attribute radios -->
+        <div style="margin-top:6px;">
+          <strong>Sort by:</strong><br>
+          <label><input type="radio" value="subject"  v-model="sortBy"> Subject</label><br>
+          <label><input type="radio" value="location" v-model="sortBy"> Location</label><br>
+          <label><input type="radio" value="price"    v-model="sortBy"> Price</label><br>
+          <label><input type="radio" value="spaces"   v-model="sortBy"> Spaces</label>
+        </div>
+
+        <!-- Asc / Desc -->
+        <div style="margin-top:6px;">
           <strong>Sort:</strong>
           <label><input type="radio" value="az" v-model="filters.sortAlpha"> Ascending</label>
           <label><input type="radio" value="za" v-model="filters.sortAlpha"> Descending</label>
         </div>
 
-        <div>
+        <div style="margin-top:6px;">
           <button class="btn-reset" @click="resetFilters">Reset</button>
         </div>
       </section>
@@ -98,8 +107,6 @@
                     • Total: £{{ (item.price * item.qty).toFixed(2) }}
                   </p>
                 </div>
-
-                
                 <button class="btn-outline" @click="removeOneById(item.id)">Remove lesson</button>
               </div>
 
@@ -109,12 +116,10 @@
             <p v-else>Your cart is empty.</p>
           </section>
 
-          <!-- Customer Details -->
+          <!-- Customer Details (Name/Phone validation already added previously) -->
           <div class="checkout-block">
-            
             <p><strong>Name:</strong> <input v-model="order.name" placeholder="Letters only" /></p>
             <p><strong>Phone:</strong> <input v-model="order.phone" placeholder="Numbers only" /></p>
-
 
             <p>
               <input type="checkbox" id="gift" value="true" v-model="order.gift"
@@ -131,12 +136,10 @@
             <p>Gift: {{ order.gift }}</p>
             <p>Method: {{ order.method }}</p>
 
-            
             <button class="btn-primary" :disabled="!isValidCustomer" v-on:click="submitForm">
               Place Order
             </button>
 
-            
             <p v-if="!isValidCustomer" style="color:#b91c1c;margin-top:6px;">
               Enter a valid Name (letters only) and Phone (numbers only).
             </p>
@@ -153,36 +156,31 @@
           activities: activities,
           cart:[],
           showProduct:true,
-          filters:{ inStockOnly:false, sortAlpha:'az' },
+          filters:{ inStockOnly:false, sortAlpha:'az' },   // az = ascending, za = descending
+          sortBy: 'subject',                                // ✅ subject | location | price | spaces
 
-          
           order:{ name:'', phone:'', method:'Home', gift:false,
                   sendGift:'Send as a gift', dontSendGift:'do not send as a gift' },
 
-          
           states:{ Dxb:'Dubai',Sjh:'Sharjah',Aj:'Ajman',Ala:'Al ain' }
         },
         methods:{
           addToCart(p){ if(this.canAddToCart(p)) this.cart.push(p.id); },
-          removeOneById(id){
-            const i = this.cart.indexOf(id);
-            if(i !== -1) this.cart.splice(i,1);
-          },
+          removeOneById(id){ const i=this.cart.indexOf(id); if(i!==-1) this.cart.splice(i,1); },
           canAddToCart(p){ return p.availableInventory > this.cartCount(p.id); },
           cartCount(id){ return this.cart.filter(pid=>pid===id).length; },
           showCheckout(){ this.showProduct = !this.showProduct; },
           submitForm(){
             alert('Order Submitted!');
             this.cart.length=0;
-            this.order.name = '';
-            this.order.phone = '';
-            this.order.method = 'Home';
-            this.order.gift = false;
+            this.order.name=''; this.order.phone='';
+            this.order.method='Home'; this.order.gift=false;
             this.showProduct=true;
           },
           resetFilters(){
             this.filters.inStockOnly=false;
             this.filters.sortAlpha='az';
+            this.sortBy='subject';
           }
         },
         computed:{
@@ -195,11 +193,23 @@
           cartTotal(){
             return this.cartDetails.reduce((s,i)=>s+i.price*i.qty,0).toFixed(2);
           },
+          // ✅ Generic sorter: subject/location/price/spaces + asc/desc
           sortedByTitle(){
             const copy=this.activities.slice();
+            const left = (p)=> p.availableInventory - this.cartCount(p.id);
+
             copy.sort((a,b)=>{
-              const cmp=a.title.localeCompare(b.title);
-              return this.filters.sortAlpha==='az'?cmp:-cmp;
+              let A,B;
+              if (this.sortBy==='subject')   { A=a.title;     B=b.title; }
+              else if (this.sortBy==='location'){ A=a.Location;  B=b.Location; }
+              else if (this.sortBy==='price') { A=a.price;     B=b.price; }
+              else /* spaces */               { A=left(a);     B=left(b); }
+
+              let cmp;
+              if (typeof A==='string' && typeof B==='string') cmp = A.localeCompare(B);
+              else cmp = (A<B)?-1 : (A>B)?1 : 0;
+
+              return this.filters.sortAlpha==='az' ? cmp : -cmp;
             });
             return copy;
           },
@@ -209,11 +219,10 @@
               return !this.filters.inStockOnly || left>0;
             }).length;
           },
-          
           isValidCustomer(){
             const nameOk  = /^[A-Za-z\s]+$/.test(this.order.name || '');
             const phoneOk = /^[0-9]+$/.test(this.order.phone || '');
-            return nameOk && phoneOk && this.cart.length > 0;
+            return nameOk && phoneOk && this.cart.length>0;
           }
         }
       });
