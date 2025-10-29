@@ -19,131 +19,121 @@
         </button>
       </header>
 
-      <!-- Filters -->
-      <section class="filters">
-        <div>
-          <label>
-            <input type="checkbox" v-model="filters.inStockOnly">
-            In stock only
-          </label>
-        </div>
-
-        <!-- ✅ NEW: Sort-by attribute radios -->
-        <div style="margin-top:6px;">
-          <strong>Sort by:</strong><br>
-          <label><input type="radio" value="subject"  v-model="sortBy"> Subject</label><br>
-          <label><input type="radio" value="location" v-model="sortBy"> Location</label><br>
-          <label><input type="radio" value="price"    v-model="sortBy"> Price</label><br>
-          <label><input type="radio" value="spaces"   v-model="sortBy"> Spaces</label>
-        </div>
-
-        <!-- Asc / Desc -->
-        <div style="margin-top:6px;">
-          <strong>Sort:</strong>
-          <label><input type="radio" value="az" v-model="filters.sortAlpha"> Ascending</label>
-          <label><input type="radio" value="za" v-model="filters.sortAlpha"> Descending</label>
-        </div>
-
-        <div style="margin-top:6px;">
-          <button class="btn-reset" @click="resetFilters">Reset</button>
-        </div>
-      </section>
-
       <main>
-        <!-- Product List -->
-        <div v-if="showProduct">
-          <div
-            v-for="product in sortedByTitle"
-            :key="product.id"
-            class="card"
-            v-if="!filters.inStockOnly || (product.availableInventory - cartCount(product.id) > 0)"
-          >
-            <figure><img :src="product.image" alt=""></figure>
-            <h2 v-text="product.title"></h2>
-            <p v-text="product.description"></p>
+        <!-- PRODUCT LIST VIEW -->
+        <div v-if="showProduct" class="layout">
+          <!-- Sidebar (filters) -->
+          <aside class="sidebar">
+            <div class="filters-box">
+              <p class="filters-title">Sort by</p>
+              <label><input type="radio" value="subject"  v-model="sortBy"> Subject</label><br>
+              <label><input type="radio" value="location" v-model="sortBy"> Location</label><br>
+              <label><input type="radio" value="price"    v-model="sortBy"> Price</label><br>
+              <label><input type="radio" value="spaces"   v-model="sortBy"> Availability</label>
 
-            <p class="price">Price: £{{ product.price }}</p>
-            <p>Location: {{ product.Location }}</p>
-            <p>Spaces: {{ product.availableInventory - cartCount(product.id) }}</p>
+              <div class="sep"></div>
 
-            <div class="controls">
-              <button
-                v-if="canAddToCart(product)"
-                class="btn-primary"
-                @click="addToCart(product)"
-              >Add to cart</button>
-              <button v-else class="btn-outline" disabled>Out of Stock</button>
+              <label><input type="radio" value="az" v-model="filters.sortAlpha"> Ascending</label><br>
+              <label><input type="radio" value="za" v-model="filters.sortAlpha"> Descending</label>
+
+              <div class="sep"></div>
+
+              <label>
+                <input type="checkbox" v-model="filters.inStockOnly">
+                In stock only
+              </label>
+
+              <div class="sep"></div>
+              <button class="btn-reset" @click="resetFilters">Reset</button>
+            </div>
+          </aside>
+
+          <!-- Cards area -->
+          <section class="cards-area">
+            <div class="cards-wrapper">
+              <div
+                v-for="product in sortedByTitle"
+                :key="product.id"
+                class="card"
+                v-if="!filters.inStockOnly || (product.availableInventory - cartCount(product.id) > 0)"
+              >
+                <figure class="thumb"><img :src="product.image" alt=""></figure>
+
+                <p class="card-line"><strong>Subject:</strong> {{ product.title }}</p>
+                <p class="card-line"><strong>Location:</strong> {{ product.Location }}</p>
+                <p class="card-line"><strong>Price:</strong> £{{ product.price }}</p>
+                <p class="card-line"><strong>Spaces:</strong> {{ product.availableInventory - cartCount(product.id) }}</p>
+
+                <div class="controls">
+                  <button
+                    v-if="canAddToCart(product)"
+                    class="btn-primary"
+                    @click="addToCart(product)"
+                  >Add to cart</button>
+                  <button v-else class="btn-outline" disabled>Out of Stock</button>
+                </div>
+              </div>
             </div>
 
-            <div class="stock">
-              <span v-if="product.availableInventory === cartCount(product.id)">All out!</span>
-              <span v-else-if="product.availableInventory - cartCount(product.id) < 5">
-                Only {{ product.availableInventory - cartCount(product.id) }} left!
-              </span>
-              <span v-else>Buy now!</span>
-            </div>
-          </div>
-
-          <p v-if="visibleCount === 0">No activities match your filter.</p>
+            <!-- Message if nothing visible -->
+            <p v-if="visibleCount === 0" class="empty-note">No activities match your filter.</p>
+          </section>
         </div>
 
-        <!-- Checkout -->
-        <div v-else>
-          <h2>Checkout</h2>
+        <!-- CHECKOUT VIEW -->
+        <div v-else class="checkout-view">
+          <h2 class="page-title">Checkout</h2>
 
-          <!-- Cart Summary -->
-          <section>
-            <h3>Your Cart</h3>
-
-            <div v-if="cartDetails.length" class="cart-list">
-              <div v-for="item in cartDetails" :key="item.id" class="cart-row">
-                <img :src="item.image" alt="">
-                <div class="cart-info">
-                  <p class="title">{{ item.title }}</p>
-                  <p class="sub">
-                    £{{ item.price }}
-                    • Qty: {{ item.qty }}
-                    • Location: {{ item.location }}
-                    • Total: £{{ (item.price * item.qty).toFixed(2) }}
-                  </p>
-                </div>
-                <button class="btn-outline" @click="removeOneById(item.id)">Remove lesson</button>
-              </div>
-
-              <p class="total">Cart Total: £{{ cartTotal }}</p>
-            </div>
-
-            <p v-else>Your cart is empty.</p>
-          </section>
-
-          <!-- Customer Details (Name/Phone validation already added previously) -->
-          <div class="checkout-block">
+          <!-- Name / Phone (validation) -->
+          <div class="checkout-form">
             <p><strong>Name:</strong> <input v-model="order.name" placeholder="Letters only" /></p>
             <p><strong>Phone:</strong> <input v-model="order.phone" placeholder="Numbers only" /></p>
-
             <p>
               <input type="checkbox" id="gift" value="true" v-model="order.gift"
                      :true-value="order.sendGift" :false-value="order.dontSendGift">
               <label for="gift">Ship As Gift?</label>
             </p>
+            <p>
+              <input type="radio" id="home" value="Home" v-model="order.method"><label for="home">Home</label>
+              <input type="radio" id="business" value="Business" v-model="order.method" style="margin-left:12px;"><label for="business">Business</label>
+            </p>
 
-            <p><input type="radio" id="home" value="Home" v-model="order.method"><label for="home">Home</label></p>
-            <p><input type="radio" id="business" value="Business" v-model="order.method"><label for="business">Business</label></p>
-
-            <h2>Order Information</h2>
-            <p>Name: {{ order.name }}</p>
-            <p>Phone: {{ order.phone }}</p>
-            <p>Gift: {{ order.gift }}</p>
-            <p>Method: {{ order.method }}</p>
+            <p class="order-info"><strong>Order Information</strong></p>
+            <p>Name: {{ order.name }} &nbsp; | &nbsp; Phone: {{ order.phone }} &nbsp; | &nbsp; Method: {{ order.method }}</p>
 
             <button class="btn-primary" :disabled="!isValidCustomer" v-on:click="submitForm">
               Place Order
             </button>
-
-            <p v-if="!isValidCustomer" style="color:#b91c1c;margin-top:6px;">
+            <p v-if="!isValidCustomer" class="hint">
               Enter a valid Name (letters only) and Phone (numbers only).
             </p>
           </div>
+
+          <!-- Cart Summary -->
+          <section class="cart-summary">
+            <h3 class="cart-title">Shopping Cart</h3>
+
+             <div v-if="cartDetails.length" class="cart-grid">
+               <div v-for="item in cartDetails" :key="item.id" class="cart-card">
+                  <div class="cart-card-body">
+                    <div class="cart-text">
+                      <p class="line"><strong>Subject:</strong> {{ item.title }}</p>
+                      <p class="line"><strong>Location:</strong> {{ item.location }}</p>
+                      <p class="line"><strong>Price:</strong> £{{ item.price }}</p>
+                      <p class="line"><strong>Spaces:</strong> {{ spacesLeft(item.id) }}</p>
+                    </div>
+                    <img :src="item.image" alt="" class="cart-thumb">
+                  </div>
+
+                  <button class="btn-remove" @click="removeOneById(item.id)">Remove</button>
+                </div>
+              </div>
+
+              <p v-else>Your cart is empty.</p>
+
+              <p class="total">Cart Total: £{{ cartTotal }}</p>
+          </section>
+
         </div>
       </main>
     </div>
@@ -156,14 +146,18 @@
           activities: activities,
           cart:[],
           showProduct:true,
-          filters:{ inStockOnly:false, sortAlpha:'az' },   // az = ascending, za = descending
-          sortBy: 'subject',                                // ✅ subject | location | price | spaces
 
+          // filters + sorting
+          filters:{ inStockOnly:false, sortAlpha:'az' },   // 'az' or 'za'
+          sortBy: 'subject',                                // 'subject' | 'location' | 'price' | 'spaces'
+
+          // checkout data
           order:{ name:'', phone:'', method:'Home', gift:false,
                   sendGift:'Send as a gift', dontSendGift:'do not send as a gift' },
 
           states:{ Dxb:'Dubai',Sjh:'Sharjah',Aj:'Ajman',Ala:'Al ain' }
         },
+
         methods:{
           addToCart(p){ if(this.canAddToCart(p)) this.cart.push(p.id); },
           removeOneById(id){ const i=this.cart.indexOf(id); if(i!==-1) this.cart.splice(i,1); },
@@ -181,29 +175,38 @@
             this.filters.inStockOnly=false;
             this.filters.sortAlpha='az';
             this.sortBy='subject';
+          },
+          spacesLeft(id){
+            const p = this.activities.find(a => a.id === id);
+            return p ? (p.availableInventory - this.cartCount(id)) : 0;
           }
+
         },
+
         computed:{
           cartItemCount(){ return this.cart.length || ''; },
+
           cartDetails(){
             return this.activities
               .map(p=>({id:p.id,title:p.title,price:p.price,image:p.image,location:p.Location,qty:this.cartCount(p.id)}))
               .filter(i=>i.qty>0);
           },
+
           cartTotal(){
             return this.cartDetails.reduce((s,i)=>s+i.price*i.qty,0).toFixed(2);
           },
-          // ✅ Generic sorter: subject/location/price/spaces + asc/desc
+
+          // sort by chosen attribute + asc/desc
           sortedByTitle(){
             const copy=this.activities.slice();
             const left = (p)=> p.availableInventory - this.cartCount(p.id);
 
             copy.sort((a,b)=>{
               let A,B;
-              if (this.sortBy==='subject')   { A=a.title;     B=b.title; }
+              if (this.sortBy==='subject')      { A=a.title;     B=b.title; }
               else if (this.sortBy==='location'){ A=a.Location;  B=b.Location; }
-              else if (this.sortBy==='price') { A=a.price;     B=b.price; }
-              else /* spaces */               { A=left(a);     B=left(b); }
+              else if (this.sortBy==='price')   { A=a.price;     B=b.price; }
+              else                               { A=left(a);     B=left(b); }
 
               let cmp;
               if (typeof A==='string' && typeof B==='string') cmp = A.localeCompare(B);
@@ -211,14 +214,19 @@
 
               return this.filters.sortAlpha==='az' ? cmp : -cmp;
             });
+
             return copy;
           },
+
+          // visible count (in-stock only)
           visibleCount(){
             return this.activities.filter(p=>{
               const left=p.availableInventory-this.cartCount(p.id);
               return !this.filters.inStockOnly || left>0;
             }).length;
           },
+
+          // name letters-only, phone numbers-only, and cart not empty
           isValidCustomer(){
             const nameOk  = /^[A-Za-z\s]+$/.test(this.order.name || '');
             const phoneOk = /^[0-9]+$/.test(this.order.phone || '');
