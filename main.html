@@ -61,7 +61,8 @@
 
                 <p class="card-line"><strong>Subject:</strong> {{ product.title }}</p>
                 <p class="card-line"><strong>Location:</strong> {{ product.Location }}</p>
-                <p class="card-line"><strong>Price:</strong> £{{ product.price }}</p>
+                <!-- AED on product cards -->
+                <p class="card-line"><strong>Price:</strong> AED {{ product.price.toFixed(2) }}</p>
                 <p class="card-line"><strong>Spaces:</strong> {{ product.availableInventory - cartCount(product.id) }}</p>
 
                 <div class="controls">
@@ -109,31 +110,34 @@
             </p>
           </div>
 
-          <!-- Cart Summary -->
+          <!-- Cart Summary (card style) -->
           <section class="cart-summary">
             <h3 class="cart-title">Shopping Cart</h3>
 
-             <div v-if="cartDetails.length" class="cart-grid">
-               <div v-for="item in cartDetails" :key="item.id" class="cart-card">
-                  <div class="cart-card-body">
-                    <div class="cart-text">
-                      <p class="line"><strong>Subject:</strong> {{ item.title }}</p>
-                      <p class="line"><strong>Location:</strong> {{ item.location }}</p>
-                      <p class="line"><strong>Price:</strong> £{{ item.price }}</p>
-                      <p class="line"><strong>Spaces:</strong> {{ spacesLeft(item.id) }}</p>
-                    </div>
-                    <img :src="item.image" alt="" class="cart-thumb">
+            <div v-if="cartDetails.length" class="cart-grid">
+              <div v-for="item in cartDetails" :key="item.id" class="cart-card">
+                <div class="cart-card-body">
+                  <div class="cart-text">
+                    <p class="line"><strong>Subject:</strong> {{ item.title }}</p>
+                    <p class="line"><strong>Location:</strong> {{ item.location }}</p>
+                    <!-- AED in cart items -->
+                    <p class="line"><strong>Price:</strong> AED {{ (item.price).toFixed(2) }}</p>
+                    <p class="line"><strong>Spaces:</strong> {{ spacesLeft(item.id) }}</p>
+                    <!-- Line total in AED -->
+                    <p class="line"><strong>Line Total:</strong> AED {{ (item.price * item.qty).toFixed(2) }}</p>
                   </div>
-
-                  <button class="btn-remove" @click="removeOneById(item.id)">Remove</button>
+                  <img :src="item.image" alt="" class="cart-thumb">
                 </div>
+
+                <button class="btn-remove" @click="removeOneById(item.id)">Remove</button>
               </div>
+            </div>
 
-              <p v-else>Your cart is empty.</p>
+            <p v-else>Your cart is empty.</p>
 
-              <p class="total">Cart Total: £{{ cartTotal }}</p>
+            <!-- Cart total in AED -->
+            <p class="total">Cart Total: AED {{ cartTotal }}</p>
           </section>
-
         </div>
       </main>
     </div>
@@ -176,11 +180,11 @@
             this.filters.sortAlpha='az';
             this.sortBy='subject';
           },
+          // used in cart card to show live remaining spaces for that item
           spacesLeft(id){
             const p = this.activities.find(a => a.id === id);
             return p ? (p.availableInventory - this.cartCount(id)) : 0;
           }
-
         },
 
         computed:{
