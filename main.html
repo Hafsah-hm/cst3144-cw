@@ -12,7 +12,7 @@
       <header>
         <h1 v-text="sitename"></h1>
 
-        <!-- Lessons page: show Checkout (disabled if cart empty) -->
+        
         <button v-if="showProduct"
                 :disabled="cart.length===0"
                 @click="showCheckout">
@@ -21,13 +21,13 @@
           Checkout
         </button>
 
-        <!-- Checkout page: always show Back button (even if cart empty) -->
+       
         <button v-else @click="showCheckout">
           ← Back to Lessons
         </button>
       </header>
 
-      <!-- Top Search: only on lessons page -->
+      
       <div class="top-search" v-if="showProduct">
         <input
           class="top-search-input"
@@ -39,9 +39,9 @@
       </div>
 
       <main>
-        <!-- PRODUCT LIST VIEW -->
+        
         <div v-if="showProduct" class="layout">
-          <!-- Sidebar (filters) -->
+          
           <aside class="sidebar">
             <div class="filters-box">
               <p class="filters-title">Sort by</p>
@@ -60,7 +60,7 @@
             </div>
           </aside>
 
-          <!-- Cards area -->
+          
           <section class="cards-area">
             <div class="cards-wrapper">
               <div
@@ -98,37 +98,11 @@
           </section>
         </div>
 
-        <!-- CHECKOUT VIEW -->
+        
         <div v-else class="checkout-view">
           <h2 class="page-title">Checkout</h2>
 
-          <!-- Name / Phone (validation only) -->
-          <div class="checkout-form">
-            <p><strong>Name:</strong> <input v-model="order.name" placeholder="Letters only" /></p>
-            <p><strong>Phone:</strong> <input v-model="order.phone" placeholder="Numbers only" /></p>
-            <p>
-              <input type="checkbox" id="gift" value="true" v-model="order.gift"
-                     :true-value="order.sendGift" :false-value="order.dontSendGift">
-              <label for="gift">Ship As Gift?</label>
-            </p>
-            <p>
-              <input type="radio" id="home" value="Home" v-model="order.method"><label for="home">Home</label>
-              <input type="radio" id="business" value="Business" v-model="order.method" style="margin-left:12px;"><label for="business">Business</label>
-            </p>
-
-            <p class="order-info"><strong>Order Information</strong></p>
-            <p>Name: {{ order.name }} &nbsp; | &nbsp; Phone: {{ order.phone }} &nbsp; | &nbsp; Method: {{ order.method }}</p>
-
-            <!-- Always visible; only clickable when name/phone valid -->
-            <button class="btn-primary" :disabled="!isValidCustomer" @click="submitForm">
-              Place Order
-            </button>
-            <p v-if="!isValidCustomer" class="hint">
-              Enter a valid Name (letters only) and Phone (numbers only).
-            </p>
-          </div>
-
-          <!-- Cart Summary -->
+          
           <section class="cart-summary">
             <h3 class="cart-title">Shopping Cart</h3>
 
@@ -145,6 +119,7 @@
                   <img :src="item.image" alt="" class="cart-thumb">
                 </div>
 
+                
                 <button class="btn-remove" @click="removeOneById(item.id)">Remove</button>
               </div>
             </div>
@@ -153,6 +128,32 @@
 
             <p class="total">Cart Total: AED {{ cartTotal }}</p>
           </section>
+
+         
+          <div class="checkout-form">
+            <p><strong>Name:</strong> <input v-model="order.name" placeholder="Letters only" /></p>
+            <p><strong>Phone:</strong> <input v-model="order.phone" placeholder="Numbers only" /></p>
+            <p>
+              <input type="checkbox" id="gift" value="true" v-model="order.gift"
+                     :true-value="order.sendGift" :false-value="order.dontSendGift">
+              <label for="gift">Ship As Gift?</label>
+            </p>
+            <p>
+              <input type="radio" id="home" value="Home" v-model="order.method"><label for="home">Home</label>
+              <input type="radio" id="business" value="Business" v-model="order.method" style="margin-left:12px;"><label for="business">Business</label>
+            </p>
+
+            <p class="order-info"><strong>Order Information</strong></p>
+            <p>Name: {{ order.name }} &nbsp; | &nbsp; Phone: {{ order.phone }} &nbsp; | &nbsp; Method: {{ order.method }}</p>
+
+            
+            <button class="btn-primary" :disabled="!isValidCustomer" @click="submitForm">
+              Place Order
+            </button>
+            <p v-if="!isValidCustomer" class="hint">
+              Enter a valid Name (letters only) and Phone (numbers only).
+            </p>
+          </div>
         </div>
       </main>
     </div>
@@ -170,32 +171,43 @@
           sortBy: 'subject',    // 'subject' | 'location' | 'price' | 'spaces'
           sortOrder: 'az',      // 'az' or 'za'
 
-          // search text (lessons page only)
+          
           searchText: '',
 
-          // checkout data
+          
           order:{ name:'', phone:'', method:'Home', gift:false,
                   sendGift:'Send as a gift', dontSendGift:'do not send as a gift' }
         },
 
         methods:{
+          // cart ops
           addToCart(p){ if(this.canAddToCart(p)) this.cart.push(p.id); },
           removeOneById(id){ const i=this.cart.indexOf(id); if(i!==-1) this.cart.splice(i,1); },
+
+          // checks
           canAddToCart(p){ return p.availableInventory > this.cartCount(p.id); },
           cartCount(id){ return this.cart.filter(pid=>pid===id).length; },
+
+          // navigation
           showCheckout(){ this.showProduct = !this.showProduct; },
+
+          // submit 
           submitForm(){
             alert('Order Submitted!');
-            this.cart = [];                                  // reset cart (reactive)
+            this.cart = [];                                 
             this.order.name=''; this.order.phone='';
             this.order.method='Home'; this.order.gift=false;
-            this.showProduct=true;                           // back to lessons
+            this.showProduct=true;                           
           },
+
+          // 
           resetFilters(){
             this.sortBy='subject';
             this.sortOrder='az';
             this.searchText='';
           },
+
+          
           spacesLeft(id){
             const p = this.activities.find(a => a.id === id);
             return p ? (p.availableInventory - this.cartCount(id)) : 0;
@@ -203,9 +215,10 @@
         },
 
         computed:{
-          // Return a number so header shows 0 when empty
+          
           cartItemCount(){ return this.cart.length; },
 
+          // for checkout cards
           cartDetails(){
             return this.activities
               .map(p=>({id:p.id,title:p.title,price:p.price,image:p.image,location:p.Location,qty:this.cartCount(p.id)}))
@@ -216,14 +229,14 @@
             return this.cartDetails.reduce((s,i)=>s+i.price*i.qty,0).toFixed(2);
           },
 
-          // Search across subject, location, price, spaces (lessons page)
+          // search first
           searchedList(){
             const q = (this.searchText || '').toString().trim().toLowerCase();
             if (!q) return this.activities.slice();
 
             return this.activities.filter(p=>{
-              const subject = (p.title || '').toString().toLowerCase();
-              const location = (p.Location || '').toString().toLowerCase();
+              const subject = (p.title || '').toLowerCase();
+              const location = (p.Location || '').toLowerCase();
               const priceStr = (p.price != null ? String(p.price) : '').toLowerCase();
               const spaces = p.availableInventory - this.cartCount(p.id);
               const spacesStr = String(spaces);
@@ -235,7 +248,7 @@
             });
           },
 
-          // Sort AFTER search
+          
           sortedAndFiltered(){
             const list = this.searchedList.slice();
             const left = (p)=> p.availableInventory - this.cartCount(p.id);
@@ -257,12 +270,12 @@
             return list;
           },
 
-          // For the “No activities match…” message
+          // message helper
           visibleCount(){
             return this.sortedAndFiltered.length;
           },
 
-          // Only validates Name & Phone (button always visible)
+          
           isValidCustomer(){
             const nameOk  = /^[A-Za-z\s]+$/.test(this.order.name || '');
             const phoneOk = /^[0-9]+$/.test(this.order.phone || '');
