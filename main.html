@@ -214,15 +214,13 @@
         },
 
         methods:{
-          // ---------- BACKEND FETCH HELPERS ----------
+          
 
           // Get lessons from backend, optionally with a search query
-          // 1. Fetch Lessons (Handles both "All" and "Search")
           fetchLessons(q) {
-            const baseUrl = 'http://localhost:3000';
+            const baseUrl = 'https://cst3144-backend-1932.onrender.com';
             let url = `${baseUrl}/lessons`; // Default URL
 
-            // If there is a search term, change URL to /search
             if (q && q.trim().length > 0) {
               url = `${baseUrl}/search?q=${encodeURIComponent(q.trim())}`;
             }
@@ -233,30 +231,29 @@
               .then(res => res.json())
               .then(data => {
                 console.log('📦 Data received:', data.length, 'items');
-                this.activities = data; // Update Vue data
+                this.activities = data;
               })
               .catch(err => {
                 console.error('❌ Fetch Error:', err);
               });
           },
 
-          // 2. Triggered when typing
+          // Triggered when typing
           onSearchChange() {
-            // Cancel previous timer if user keeps typing
             if (this.searchTimeout) clearTimeout(this.searchTimeout);
-            
-            // Wait 300ms before asking server (Debounce)
+
             this.searchTimeout = setTimeout(() => {
               console.log('⌨️ User typed:', this.searchText);
               this.fetchLessons(this.searchText);
             }, 300);
           },
 
-          // 3. Clear button logic
+          // Clear button logic
           clearSearch() {
             this.searchText = '';
             this.fetchLessons(''); // Fetch all
           },
+
           // cart ops
           addToCart(p){
             if(this.canAddToCart(p)) this.cart.push(p.id);
@@ -299,7 +296,7 @@
 
             console.log('submitForm → sending orderPayload:', orderPayload);
 
-            fetch('http://localhost:3000/orders', {
+            fetch('https://cst3144-backend-1932.onrender.com/orders', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(orderPayload)
@@ -308,7 +305,6 @@
               .then(data => {
                 console.log('Order saved:', data);
 
-                // update spaces in lessons collection
                 this.updateSpacesAfterOrder();
 
                 alert('Order Submitted!');
@@ -345,7 +341,7 @@
               const newSpaces = lesson.availableInventory - item.qty;
               console.log(`updateSpacesAfterOrder → lesson ${lesson.id} newSpaces =`, newSpaces);
 
-              fetch(`http://localhost:3000/lessons/${lesson.id}`, {
+              fetch(`https://cst3144-backend-1932.onrender.com/lessons/${lesson.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ availableInventory: newSpaces })
