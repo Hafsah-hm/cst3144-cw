@@ -2,7 +2,7 @@
   <head>
     <title>After School Activities</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
   </head>
 
@@ -34,8 +34,9 @@
           v-model="searchText"
           type="text"
           placeholder="Search subject, location, price, or spaces..."
+          @input="onSearchChange"
         />
-        <button class="btn-outline" @click="searchText = ''">Clear</button>
+        <button class="btn-outline" @click="clearSearch">Clear</button>
       </div>
 
       <main>
@@ -195,6 +196,7 @@
           sortOrder: 'az',
 
           searchText: '',
+          searchTimeout: null,   // for debounce
 
           order:{
             name:'',
@@ -207,16 +209,54 @@
         },
 
         mounted(){
-          // GET lessons from backend (MongoDB via Express)
-          fetch('http://localhost:3000/lessons')
-            .then(res => res.json())
-            .then(data => {
-              this.activities = data;
-            })
-            .catch(err => console.error('Error fetching lessons:', err));
+          console.log('Vue mounted → fetching all lessons');
+          this.fetchLessons('');
         },
 
         methods:{
+          // ---------- BACKEND FETCH HELPERS ----------
+
+          // Get lessons from backend, optionally with a search query
+          // 1. Fetch Lessons (Handles both "All" and "Search")
+          fetchLessons(q) {
+            const baseUrl = 'http://localhost:3000';
+            let url = `${baseUrl}/lessons`; // Default URL
+
+            // If there is a search term, change URL to /search
+            if (q && q.trim().length > 0) {
+              url = `${baseUrl}/search?q=${encodeURIComponent(q.trim())}`;
+            }
+
+            console.log('🌐 Fetching from:', url);
+
+            fetch(url)
+              .then(res => res.json())
+              .then(data => {
+                console.log('📦 Data received:', data.length, 'items');
+                this.activities = data; // Update Vue data
+              })
+              .catch(err => {
+                console.error('❌ Fetch Error:', err);
+              });
+          },
+
+          // 2. Triggered when typing
+          onSearchChange() {
+            // Cancel previous timer if user keeps typing
+            if (this.searchTimeout) clearTimeout(this.searchTimeout);
+            
+            // Wait 300ms before asking server (Debounce)
+            this.searchTimeout = setTimeout(() => {
+              console.log('⌨️ User typed:', this.searchText);
+              this.fetchLessons(this.searchText);
+            }, 300);
+          },
+
+          // 3. Clear button logic
+          clearSearch() {
+            this.searchText = '';
+            this.fetchLessons(''); // Fetch all
+          },
           // cart ops
           addToCart(p){
             if(this.canAddToCart(p)) this.cart.push(p.id);
@@ -243,47 +283,52 @@
 
           // submit → POST order to backend and then update spaces (PUT)
           submitForm(){
-             if(!this.isValidCustomer) return;
+            if(!this.isValidCustomer) return;
 
-              const orderPayload = {
+            const orderPayload = {
               name: this.order.name,
               phone: this.order.phone,
               method: this.order.method,
               gift: this.order.gift,
               lessons: this.cartDetails.map(i => ({
-              id: i.id,
-              title: i.title,   
-              qty: i.qty
-          }))
-      };
+                id: i.id,
+                title: i.title,
+                qty: i.qty
+              }))
+            };
+
+            console.log('submitForm → sending orderPayload:', orderPayload);
 
             fetch('http://localhost:3000/orders', {
-             method: 'POST',
+              method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(orderPayload)
-           })
-             .then(res => res.json())
-             .then(data => {
-              console.log('Order saved:', data);
+            })
+              .then(res => res.json())
+              .then(data => {
+                console.log('Order saved:', data);
 
-               // update spaces in lessons collection
-              this.updateSpacesAfterOrder();
- 
-              alert('Order Submitted!');
-              this.cart = [];
-              this.order.name='';
-              this.order.phone='';
-               this.order.method='Home';
-               this.order.gift=false;
-               this.showProduct = true;
+                // update spaces in lessons collection
+                this.updateSpacesAfterOrder();
+
+                alert('Order Submitted!');
+                this.cart = [];
+                this.order.name='';
+                this.order.phone='';
+                this.order.method='Home';
+                this.order.gift=false;
+                this.showProduct = true;
               })
               .catch(err => console.error('Error submitting order:', err));
           },
 
+          // reset filters
           resetFilters(){
+            console.log('resetFilters called');
             this.sortBy='subject';
             this.sortOrder='az';
             this.searchText='';
+            this.fetchLessons('');
           },
 
           spacesLeft(id){
@@ -298,8 +343,8 @@
               if (!lesson) return;
 
               const newSpaces = lesson.availableInventory - item.qty;
+              console.log(`updateSpacesAfterOrder → lesson ${lesson.id} newSpaces =`, newSpaces);
 
-              // 🔹 use numeric lesson.id with PUT /lessons/:id
               fetch(`http://localhost:3000/lessons/${lesson.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -307,7 +352,7 @@
               })
                 .then(res => res.json())
                 .then(data => {
-                  console.log('Updated spaces:', data);
+                  console.log('Updated spaces response:', data);
                   lesson.availableInventory = newSpaces;
                 })
                 .catch(err => console.error('Error updating spaces:', err));
@@ -341,26 +386,12 @@
               .toFixed(2);
           },
 
-          // search first
+          // backend already filters, so this just returns activities
           searchedList(){
-            const q = (this.searchText || '').toString().trim().toLowerCase();
-            if (!q) return this.activities.slice();
-
-            return this.activities.filter(p=>{
-              const subject = (p.title || '').toLowerCase();
-              const location = (p.Location || '').toLowerCase();
-              const priceStr = (p.price != null ? String(p.price) : '').toLowerCase();
-              const spaces = p.availableInventory - this.cartCount(p.id);
-              const spacesStr = String(spaces);
-
-              return subject.includes(q)
-                  || location.includes(q)
-                  || priceStr.includes(q)
-                  || spacesStr.includes(q);
-            });
+            return this.activities.slice();
           },
 
-          // sort after search
+          // sort after backend search
           sortedAndFiltered(){
             const list = this.searchedList.slice();
             const left = (p)=> p.availableInventory - this.cartCount(p.id);
