@@ -1,0 +1,427 @@
+<html>
+  <head>
+    <title>After School Activities</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+
+  <body>
+    <div id="app">
+      <header>
+        <h1 v-text="sitename"></h1>
+
+        <!-- header button -->
+        <button
+          v-if="showProduct"
+          :disabled="cart.length === 0"
+          @click="showCheckout"
+        >
+          {{ cartItemCount }}
+          <i class="fa-solid fa-cart-plus"></i>
+          Checkout
+        </button>
+
+        <button v-else @click="showCheckout">
+          ← Back to Lessons
+        </button>
+      </header>
+
+      <!-- search bar -->
+      <div class="top-search" v-if="showProduct">
+        <input
+          class="top-search-input"
+          v-model="searchText"
+          type="text"
+          placeholder="Search subject, location, price, or spaces..."
+          @input="onSearchChange"
+        />
+        <button class="btn-outline" @click="clearSearch">Clear</button>
+      </div>
+
+      <main>
+        <!-- PRODUCT VIEW -->
+        <div v-if="showProduct" class="layout">
+          <aside class="sidebar">
+            <div class="filters-box">
+              <p class="filters-title">Sort by</p>
+              <label><input type="radio" value="subject"  v-model="sortBy"> Subject</label><br>
+              <label><input type="radio" value="location" v-model="sortBy"> Location</label><br>
+              <label><input type="radio" value="price"    v-model="sortBy"> Price</label><br>
+              <label><input type="radio" value="spaces"   v-model="sortBy"> Availability</label>
+
+              <div class="sep"></div>
+
+              <label><input type="radio" value="az" v-model="sortOrder"> Ascending</label><br>
+              <label><input type="radio" value="za" v-model="sortOrder"> Descending</label>
+
+              <div class="sep"></div>
+              <button class="btn-reset" @click="resetFilters">Reset</button>
+            </div>
+
+            <p class="results-info">
+              Showing <strong>{{ visibleCount }}</strong> lessons
+            </p>
+          </aside>
+
+          <section class="cards-area">
+            <div class="cards-wrapper">
+              <div
+                v-for="product in sortedAndFiltered"
+                :key="product.id"
+                class="card"
+              >
+                <figure class="thumb"><img :src="product.image" alt=""></figure>
+
+                <p class="card-line"><strong>Subject:</strong> {{ product.title }}</p>
+                <p class="card-line"><strong>Location:</strong> {{ product.Location }}</p>
+                <p class="card-line"><strong>Price:</strong> AED {{ product.price.toFixed(2) }}</p>
+                <p class="card-line">
+                  <strong>Spaces:</strong>
+                  {{ product.availableInventory - cartCount(product.id) }}
+                </p>
+
+                <div class="controls">
+                  <button
+                    v-if="canAddToCart(product)"
+                    class="btn-primary"
+                    @click="addToCart(product)"
+                  >Add to cart</button>
+                  <button v-else class="btn-outline" disabled>Out of Stock</button>
+                </div>
+
+                <div class="stock">
+                  <span v-if="product.availableInventory === cartCount(product.id)">All out!</span>
+                  <span v-else-if="product.availableInventory - cartCount(product.id) < 5">
+                    Only {{ product.availableInventory - cartCount(product.id) }} left!
+                  </span>
+                  <span v-else>Buy now!</span>
+                </div>
+              </div>
+            </div>
+
+            <p v-if="visibleCount === 0" class="empty-note">No activities match your filter.</p>
+          </section>
+        </div>
+
+        <!-- CHECKOUT VIEW -->
+        <div v-else class="checkout-view">
+          <h2 class="page-title">Checkout</h2>
+
+          <section class="cart-summary">
+            <h3 class="cart-title">Shopping Cart</h3>
+
+            <div v-if="cartDetails.length" class="cart-grid">
+              <div v-for="item in cartDetails" :key="item.id" class="cart-card">
+                <div class="cart-card-body">
+                  <div class="cart-text">
+                    <p class="line"><strong>Subject:</strong> {{ item.title }}</p>
+                    <p class="line"><strong>Location:</strong> {{ item.location }}</p>
+                    <p class="line"><strong>Price:</strong> AED {{ (item.price).toFixed(2) }}</p>
+                    <p class="line"><strong>Spaces:</strong> {{ spacesLeft(item.id) }}</p>
+                    <p class="line"><strong>Line Total:</strong> AED {{ (item.price * item.qty).toFixed(2) }}</p>
+                  </div>
+                  <img :src="item.image" alt="" class="cart-thumb">
+                </div>
+
+                <button class="btn-remove" @click="removeOneById(item.id)">
+                  <i class="fa-solid fa-trash"></i> Remove one
+                </button>
+              </div>
+
+              <div class="cart-total-box">
+                <p><strong>Total Items:</strong> {{ cartItemCount }}</p>
+                <p><strong>Order Total:</strong> AED {{ cartTotal }}</p>
+              </div>
+            </div>
+
+            <p v-else>Your cart is empty.</p>
+          </section>
+
+          <section class="checkout-form">
+            <h3>Customer Details</h3>
+
+            <label class="field">
+              Name:
+              <input type="text" v-model="order.name" placeholder="Enter your full name">
+            </label>
+
+            <label class="field">
+              Phone:
+              <input type="text" v-model="order.phone" placeholder="Enter your phone number">
+            </label>
+
+            <fieldset class="field">
+              <legend>Delivery Method</legend>
+              <label><input type="radio" value="Home"    v-model="order.method"> Home</label>
+              <label><input type="radio" value="Pick-up" v-model="order.method"> Pick-up</label>
+            </fieldset>
+
+            <label class="field checkbox">
+              <input type="checkbox" v-model="order.gift">
+              {{ order.gift ? order.sendGift : order.dontSendGift }}
+            </label>
+
+            <div class="order-summary">
+              <p><strong>Order Summary:</strong></p>
+              <p>
+                Name: {{ order.name }} &nbsp; | &nbsp;
+                Phone: {{ order.phone }} &nbsp; | &nbsp;
+                Method: {{ order.method }}
+              </p>
+
+              <button class="btn-primary" :disabled="!isValidCustomer" @click="submitForm">
+                Place Order
+              </button>
+              <p v-if="!isValidCustomer" class="hint">
+                Enter a valid Name (letters only) and Phone (numbers only).
+              </p>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      let webstore = new Vue({
+        el:'#app',
+        data:{
+          sitename: 'After School Activities',
+          activities: [],   // filled from backend
+          cart:[],
+          showProduct:true,
+
+          // sorting controls
+          sortBy: 'subject',
+          sortOrder: 'az',
+
+          searchText: '',
+          searchTimeout: null,   // for debounce
+
+          order:{
+            name:'',
+            phone:'',
+            method:'Home',
+            gift:false,
+            sendGift:'Send as a gift',
+            dontSendGift:'do not send as a gift'
+          }
+        },
+
+        mounted(){
+          console.log('Vue mounted → fetching all lessons');
+          this.fetchLessons('');
+        },
+
+        methods:{
+          
+
+          // Get lessons from backend, optionally with a search query
+          fetchLessons(q) {
+            const baseUrl = 'https://cst3144-backend-1932.onrender.com';
+            let url = `${baseUrl}/lessons`; // Default URL
+
+            if (q && q.trim().length > 0) {
+              url = `${baseUrl}/search?q=${encodeURIComponent(q.trim())}`;
+            }
+
+            console.log('🌐 Fetching from:', url);
+
+            fetch(url)
+              .then(res => res.json())
+              .then(data => {
+                console.log('📦 Data received:', data.length, 'items');
+                this.activities = data;
+              })
+              .catch(err => {
+                console.error('❌ Fetch Error:', err);
+              });
+          },
+
+          // Triggered when typing
+          onSearchChange() {
+            if (this.searchTimeout) clearTimeout(this.searchTimeout);
+
+            this.searchTimeout = setTimeout(() => {
+              console.log('⌨️ User typed:', this.searchText);
+              this.fetchLessons(this.searchText);
+            }, 300);
+          },
+
+          // Clear button logic
+          clearSearch() {
+            this.searchText = '';
+            this.fetchLessons(''); // Fetch all
+          },
+
+          // cart ops
+          addToCart(p){
+            if(this.canAddToCart(p)) this.cart.push(p.id);
+          },
+
+          removeOneById(id){
+            const i=this.cart.indexOf(id);
+            if(i!==-1) this.cart.splice(i,1);
+          },
+
+          // checks
+          canAddToCart(p){
+            return p.availableInventory > this.cartCount(p.id);
+          },
+
+          cartCount(id){
+            return this.cart.filter(pid=>pid===id).length;
+          },
+
+          // navigation
+          showCheckout(){
+            this.showProduct = !this.showProduct;
+          },
+
+          // submit → POST order to backend and then update spaces (PUT)
+          submitForm(){
+            if(!this.isValidCustomer) return;
+
+            const orderPayload = {
+              name: this.order.name,
+              phone: this.order.phone,
+              method: this.order.method,
+              gift: this.order.gift,
+              lessons: this.cartDetails.map(i => ({
+                id: i.id,
+                title: i.title,
+                qty: i.qty
+              }))
+            };
+
+            console.log('submitForm → sending orderPayload:', orderPayload);
+
+            fetch('https://cst3144-backend-1932.onrender.com/orders', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(orderPayload)
+            })
+              .then(res => res.json())
+              .then(data => {
+                console.log('Order saved:', data);
+
+                this.updateSpacesAfterOrder();
+
+                alert('Order Submitted!');
+                this.cart = [];
+                this.order.name='';
+                this.order.phone='';
+                this.order.method='Home';
+                this.order.gift=false;
+                this.showProduct = true;
+              })
+              .catch(err => console.error('Error submitting order:', err));
+          },
+
+          // reset filters
+          resetFilters(){
+            console.log('resetFilters called');
+            this.sortBy='subject';
+            this.sortOrder='az';
+            this.searchText='';
+            this.fetchLessons('');
+          },
+
+          spacesLeft(id){
+            const p = this.activities.find(a => a.id === id);
+            return p ? (p.availableInventory - this.cartCount(id)) : 0;
+          },
+
+          // PUT: update availableInventory in backend after order
+          updateSpacesAfterOrder(){
+            this.cartDetails.forEach(item => {
+              const lesson = this.activities.find(a => a.id === item.id);
+              if (!lesson) return;
+
+              const newSpaces = lesson.availableInventory - item.qty;
+              console.log(`updateSpacesAfterOrder → lesson ${lesson.id} newSpaces =`, newSpaces);
+
+              fetch(`https://cst3144-backend-1932.onrender.com/lessons/${lesson.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ availableInventory: newSpaces })
+              })
+                .then(res => res.json())
+                .then(data => {
+                  console.log('Updated spaces response:', data);
+                  lesson.availableInventory = newSpaces;
+                })
+                .catch(err => console.error('Error updating spaces:', err));
+            });
+          }
+        },
+
+        computed:{
+          cartItemCount(){
+            return this.cart.length;
+          },
+
+          // for checkout cards
+          cartDetails(){
+            return this.activities
+              .map(p=>({
+                _id: p._id,
+                id: p.id,
+                title: p.title,
+                price: p.price,
+                image: p.image,
+                location: p.Location,
+                qty: this.cartCount(p.id)
+              }))
+              .filter(i=>i.qty>0);
+          },
+
+          cartTotal(){
+            return this.cartDetails
+              .reduce((s,i)=>s+i.price*i.qty,0)
+              .toFixed(2);
+          },
+
+          // backend already filters, so this just returns activities
+          searchedList(){
+            return this.activities.slice();
+          },
+
+          // sort after backend search
+          sortedAndFiltered(){
+            const list = this.searchedList.slice();
+            const left = (p)=> p.availableInventory - this.cartCount(p.id);
+
+            list.sort((a,b)=>{
+              let A,B;
+              if (this.sortBy==='subject')      { A=a.title;     B=b.title; }
+              else if (this.sortBy==='location'){ A=a.Location;  B=b.Location; }
+              else if (this.sortBy==='price')   { A=a.price;     B=b.price; }
+              else                               { A=left(a);     B=left(b); }
+
+              let cmp;
+              if (typeof A==='string' && typeof B==='string')
+                cmp = A.localeCompare(B);
+              else
+                cmp = (A<B)?-1 : (A>B)?1 : 0;
+
+              return this.sortOrder==='az' ? cmp : -cmp;
+            });
+
+            return list;
+          },
+
+          visibleCount(){
+            return this.sortedAndFiltered.length;
+          },
+
+          isValidCustomer(){
+            const nameOk  = /^[A-Za-z\s]+$/.test(this.order.name || '');
+            const phoneOk = /^[0-9]+$/.test(this.order.phone || '');
+            return nameOk && phoneOk;
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
